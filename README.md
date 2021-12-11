@@ -1,1 +1,1 @@
-# 678-Midterm-Projecy-Boyu-Chen
+# 678-Boyu-Chen-Midterm-Project

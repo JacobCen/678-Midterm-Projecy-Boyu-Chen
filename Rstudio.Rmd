@@ -1,0 +1,92 @@
+---
+title: "678 Boyu Chen Midterm Project"
+author: "Boyu Chen"
+date: "11/21/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lme4)
+library(arm)
+library(rstanarm)
+library(gridExtra)
+```
+
+
+Import and processing data
+```{r}
+df<-read.csv("stats.csv",header = TRUE)
+goals<-df$goals
+offside<-df$total_offside
+ontarget<-df$ontarget_scoring_att
+interception<-df$interception
+pass<-df$total_pass
+yellow_card<-df$total_yel_card
+season<-df$season
+# Calculate the total credit
+win<-df$wins
+losse<-df$losses
+tie<-38-win-losse
+totalpoints<-win*3+tie*1+losse*0
+```
+
+
+```{r}
+colnames<-c("goals","offside","ontarget","interception","pass","yellow card","total points","season")
+explaination<-c("Total goals scored in single season","Number of offsides in single season","Number of shots on target in single season","Number of interceptions in single season","Total number of passing ball in single season","Number of yellow cards in single season","Total points in single season","Season")
+table <- cbind(colnames, explaination)
+colnames(table) <- c("Variables", "Explanation")
+knitr::kable(table, "pipe")
+```
+
+
+```{r}
+#EDA1
+ggplot(data = df)+
+  aes(log(goals),log(totalpoints))+
+  geom_point(aes(color = season),alpha = 0.3)+
+  labs(title="Number of total goals in single season vs Total points in single season",x="log(Number of goals)",y="log(Number of totalpoints)")+
+  geom_smooth(aes(color = season),method = "lm",se=F)
+```
+
+```{r}
+#EDA2
+ggplot(data = df)+
+  aes(log(offside),log(totalpoints))+
+  geom_point(aes(color = season),alpha = 0.3)+
+  labs(title="Number of total passes in single season vs Total points in single season",x="log(Number of passes)",y="log(Number of totalpoints)")+
+  geom_smooth(aes(color = season),method = "lm",se=F)
+```
+
+```{r}
+ggplot(data = df)+
+  aes(log(interception),log(totalpoints))+
+  geom_point(aes(color = season),alpha = 0.3)+
+  labs(title="Number of total interception in single season vs Total points in single season",x="log(Number of interception)",y="log(Number of totalpoints)")+
+  geom_smooth(aes(color = season),method = "lm",se=F)
+```
+
+```{r}
+## Make model and model fitted
+fit1<-lmer(totalpoints~goals+log(interception)+offside+log(tackle)+ontarget+log(pass)+(1+log(pass)|season),data = df)
+summary(fit1)
+# fit2<-lm(totalpoints~goals+interception+offside+ontarget+log(pass) ,data = df)
+
+plot(fitted(fit1), resid(fit1,type = "response"))
+plot(fit1)
+
+AIC(fit1)
+pp_check(fit1, n = 4000)
+
+re <- plot(fit1)
+qq <- lattice::qqmath(fit1)
+grid.arrange(re,qq,nrow=1)
+```
+
+```{r}
+# Model fitted
+car:::marginalModelPlots(fit1)
+```
+
